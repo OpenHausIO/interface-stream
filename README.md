@@ -32,6 +32,6 @@ stream.on("data", (data) => {
 
 setInterval(()=> {
     stream.write(`Hello Device: ${Date.now()}`);
-});
+}, 5000);
 
 ```
