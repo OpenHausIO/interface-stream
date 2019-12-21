@@ -4,7 +4,7 @@ const { Duplex } = require("stream");
 const util = require("util");
 
 
-function interfaceStream(interface, options) {
+function interfaceStream(options) {
 
     this.options = Object.assign({
         autoDestroy: false,
@@ -14,9 +14,10 @@ function interfaceStream(interface, options) {
     }, options);
 
     Duplex.call(this, this.options);
-
-    this.interface = interface;
     this.ws = null;
+
+    this.on("end", duplexOnEnd);
+    this.on("error", duplexOnError);
 
 };
 
@@ -69,7 +70,7 @@ function duplexOnError(err) {
 /**
  * 
  */
-interfaceStream.prototype.websocket = function (ws) {
+interfaceStream.prototype.attach = function (ws) {
 
     this.ws = ws;
     this.emit("websocket.attached", ws);
@@ -120,23 +121,23 @@ interfaceStream.prototype.websocket = function (ws) {
         if (this.destroyed) {
             // return;
         } else {
-            duplex.push(null);
+            this.push(null);
         }
     });
 
 
     // duplex._destroy
-    this._destroy = function (err, cb) {
+    this._destroy = (err, cb) => {
 
         if (ws.readyState === ws.CLOSED) {
             cb(err);
-            process.nextTick(emitClose, duplex);
+            process.nextTick(emitClose, this);
             return;
         }
 
-        ws.once("close", function close() {
+        ws.once("close", () => {
             cb(err);
-            process.nextTick(emitClose, duplex);
+            process.nextTick(emitClose, this);
         });
 
         ws.terminate();
@@ -190,7 +191,7 @@ interfaceStream.prototype.websocket = function (ws) {
         }
     };
 
-    duplex._write = (chunk, encoding, cb) => {
+    this._write = (chunk, encoding, cb) => {
         if (ws.readyState === ws.CONNECTING) {
 
             ws.once("open", () => {
@@ -204,15 +205,25 @@ interfaceStream.prototype.websocket = function (ws) {
         }
     };
 
-    duplex.on("end", duplexOnEnd);
-    duplex.on("error", duplexOnError);
-
 };
 
 
-module.exports = function (interface, options) {
+/**
+ * 
+ */
+interfaceStream.prototype.detach = function () {
+
+    if (this.ws) {
+        this.ws.close();
+        // this.ws.destroy(); ?
+    }
+
+}
+
+
+module.exports = function (options) {
     if (!(this instanceof interfaceStream)) {
-        return new interfaceStream(interface, options);
+        return new interfaceStream(options);
     } else {
         return this;
     }

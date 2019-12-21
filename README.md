@@ -15,15 +15,13 @@ const WebSocket = require("ws");
 const interfaceStream = require("interface-stream");
 
 const stream = new interfaceStream({
-    // interface obejct
-}, {
     // duplex stream options
 });
 
-const ws = new WebSocket("https://open-haus.cloud/api/device/<id>/interface/<id>");
+const ws = new WebSocket("https://open-haus.cloud/api/devices/<id>/interfaces/<id>");
 
 ws.on("open", () => {
-    stream.websocket(ws);
+    stream.attach(ws);
 });
 
 stream.on("data", (data) => {
@@ -32,6 +30,11 @@ stream.on("data", (data) => {
 
 setInterval(()=> {
     stream.write(`Hello Device: ${Date.now()}`);
+}, 1000);
+
+
+setTimeout(() => {
+    stream.detach();
 }, 5000);
 
 ```
