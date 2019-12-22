@@ -19,10 +19,19 @@ function interfaceStream(options) {
     this.on("end", duplexOnEnd);
     this.on("error", duplexOnError);
 
+
+
+    this._destroy = noop;
+    this._final = noop;
+    this._read = noop;
+    this._write = noop;
+
 };
 
 
 util.inherits(interfaceStream, Duplex);
+
+function noop() { };
 
 
 /**
@@ -73,7 +82,10 @@ function duplexOnError(err) {
 interfaceStream.prototype.attach = function (ws) {
 
     this.ws = ws;
-    this.emit("websocket.attached", ws);
+
+    process.nextTick(() => {
+        this.emit("websocket.attached", ws);
+    });
 
     ws.once("close", () => {
         this.emit("websocket.detached", ws);
@@ -191,19 +203,25 @@ interfaceStream.prototype.attach = function (ws) {
         }
     };
 
+
     this._write = (chunk, encoding, cb) => {
-        if (ws.readyState === ws.CONNECTING) {
-
-            ws.once("open", () => {
-                this._write(chunk, encoding, cb);
-            });
-
-        } else {
+        if (ws.readyState === ws.OPEN) {
 
             ws.send(chunk, cb);
 
+        } else {
+
+            // NOTE implement backlog?
+
+            /*
+            ws.once("open", () => {
+                this._write(chunk, encoding, cb);
+            });
+            */
+
         }
     };
+
 
 };
 
