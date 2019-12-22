@@ -236,7 +236,14 @@ interfaceStream.prototype.detach = function () {
         // this.ws.destroy(); ?
     }
 
-}
+    /*
+        this._destroy = noop;
+        this._final = noop;
+        this._read = noop;
+        this._write = noop;
+    */
+
+};
 
 
 module.exports = function (options) {
