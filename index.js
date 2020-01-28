@@ -158,7 +158,7 @@ interfaceStream.prototype.attach = function (ws) {
 
 
     // duplex._final
-    this._final = () => {
+    this._final = (cb) => {
         if (ws.readyState === ws.CONNECTING) {
 
             ws.once("open", () => {
