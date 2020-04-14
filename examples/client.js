@@ -2,14 +2,24 @@ const WebSocket = require("ws");
 const interfaceStream = require("../index.js");
 
 const stream = new interfaceStream({
+    //_id: ... MongoDB Object ID
+    type: "ETHERNET",
+    adapter: "raw",
+    settings: {
+        port: 8080,
+        host: "192.168.2.1",
+        protocol: "http"
+    }
+}, {
     // duplex stream options
+    emitClose: false
 });
 
-stream.on("websocket.attached", () => {
+stream.on("attached", () => {
     console.log("WebSocket attached");
 });
 
-stream.on("websocket.detached", () => {
+stream.on("detached", () => {
     console.log("WebSocket detached");
 });
 
@@ -29,10 +39,10 @@ ws.on("close", () => {
 
 
 stream.on("data", (data) => {
-    console.log("[%s] Data from server: '%s'", Date.now(), data)
+    console.log("[%s] Data from server: '%s'", Date.now(), data);
 });
 
 
 setInterval(() => {
-    stream.write(`[${Date.now()}] Hello Server, from PID: ${process.pid} `)
+    stream.write(`[${Date.now()}] Hello Server, from PID: ${process.pid}`);
 }, 3000);
