@@ -4,8 +4,22 @@ const { Duplex } = require("stream");
 const util = require("util");
 
 
-function interfaceStream(options) {
+function noop() {
+    // does nothing
+};
 
+
+/**
+ * 
+ * @param {Object} iface Interface object (mongodb schema)
+ * @param {Object} options Duplex stream options (https://nodejs.org/dist/latest-v12.x/docs/api/stream.html#stream_implementing_a_duplex_stream)
+ */
+function Interface(iface, options) {
+
+    // merge interface properties
+    Object.assign(this, iface);
+
+    // merge/override default options
     this.options = Object.assign({
         autoDestroy: false,
         emitClose: false,
@@ -13,13 +27,12 @@ function interfaceStream(options) {
         writableObjectMode: false
     }, options);
 
-    Duplex.call(this, this.options);
     this.ws = null;
 
     this.on("end", duplexOnEnd);
     this.on("error", duplexOnError);
 
-
+    Duplex.call(this, this.options);
 
     this._destroy = noop;
     this._final = noop;
@@ -29,9 +42,7 @@ function interfaceStream(options) {
 };
 
 
-util.inherits(interfaceStream, Duplex);
-
-function noop() { };
+util.inherits(Interface, Duplex);
 
 
 /**
@@ -77,18 +88,20 @@ function duplexOnError(err) {
 
 
 /**
- * 
+ * Attaches a websocket to the duplex stream
+ * @param {WebSocket} ws WebSocket object from the `ws` module
  */
-interfaceStream.prototype.attach = function (ws) {
+Interface.prototype.attach = function (ws) {
 
+    // set ws object
     this.ws = ws;
 
     process.nextTick(() => {
-        this.emit("websocket.attached", ws);
+        this.emit("attached", ws);
     });
 
     ws.once("close", () => {
-        this.emit("websocket.detached", ws);
+        this.detach();
     });
 
     let resumeOnReceiverDrain = true;
@@ -130,7 +143,7 @@ interfaceStream.prototype.attach = function (ws) {
 
 
     ws.once("close", () => {
-        if (this.destroyed) {
+        if (ws.destroyed) {
             // return;
         } else {
             this.push(null);
@@ -227,28 +240,29 @@ interfaceStream.prototype.attach = function (ws) {
 
 
 /**
- * 
+ * Detaches the currently attached WebSocket object
  */
-interfaceStream.prototype.detach = function () {
+Interface.prototype.detach = function () {
 
-    if (this.ws) {
+    if (this.ws && !this.ws.destroyed) {
         this.ws.close();
-        // this.ws.destroy(); ?
     }
 
-    /*
-        this._destroy = noop;
-        this._final = noop;
-        this._read = noop;
-        this._write = noop;
-    */
+    this._destroy = noop;
+    this._final = noop;
+    this._read = noop;
+    this._write = noop;
+
+    process.nextTick(() => {
+        this.emit("detached", ws);
+    });
 
 };
 
 
-module.exports = function (options) {
-    if (!(this instanceof interfaceStream)) {
-        return new interfaceStream(options);
+module.exports = function (iface, options) {
+    if (!(this instanceof Interface)) {
+        return new Interface(iface, options);
     } else {
         return this;
     }
