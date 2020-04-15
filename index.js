@@ -10,13 +10,13 @@ function noop() {
 
 
 /**
- * 
- * @param {Object} iface Interface object (mongodb schema)
+ * Creates a Duplex wrapper stream, it is not be destroyed on end/flush and pipes all data over websocket
+ * @param {Object} iface InterfaceStream object (mongodb schema)
  * @param {Object} options Duplex stream options (https://nodejs.org/dist/latest-v12.x/docs/api/stream.html#stream_implementing_a_duplex_stream)
  */
-function Interface(iface, options) {
+function InterfaceStream(iface, options) {
 
-    // merge interface properties
+    // merge InterfaceStream properties
     Object.assign(this, iface);
 
     // merge/override default options
@@ -42,7 +42,7 @@ function Interface(iface, options) {
 };
 
 
-util.inherits(Interface, Duplex);
+util.inherits(InterfaceStream, Duplex);
 
 
 /**
@@ -91,7 +91,7 @@ function duplexOnError(err) {
  * Attaches a websocket to the duplex stream
  * @param {WebSocket} ws WebSocket object from the `ws` module
  */
-Interface.prototype.attach = function (ws) {
+InterfaceStream.prototype.attach = function (ws) {
 
     // set ws object
     this.ws = ws;
@@ -242,7 +242,7 @@ Interface.prototype.attach = function (ws) {
 /**
  * Detaches the currently attached WebSocket object
  */
-Interface.prototype.detach = function () {
+InterfaceStream.prototype.detach = function () {
 
     if (this.ws && !this.ws.destroyed) {
         this.ws.close();
@@ -261,8 +261,8 @@ Interface.prototype.detach = function () {
 
 
 module.exports = function (iface, options) {
-    if (!(this instanceof Interface)) {
-        return new Interface(iface, options);
+    if (!(this instanceof InterfaceStream)) {
+        return new InterfaceStream(iface, options);
     } else {
         return this;
     }
